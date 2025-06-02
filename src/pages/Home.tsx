@@ -120,10 +120,7 @@ const Home: React.FC = () => {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [orders, setOrders] = useState<OrdersState>({});
-  const [orderHistory, setOrderHistory] = useState<OrderHistoryState>(() => {
-    const saved = localStorage.getItem('orderHistory');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [orderHistory, setOrderHistory] = useState<OrderHistoryState>({});
   const [reportOpen, setReportOpen] = useState(false);
   const [menuManageOpen, setMenuManageOpen] = useState(false);
   const [menuList, setMenuList] = useState<MenuItemType[]>(menuItems);
@@ -137,23 +134,52 @@ const Home: React.FC = () => {
   const [payDebtName, setPayDebtName] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState<string>('');
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState<string | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<Record<string, { amount: number; date: string }[]>>(() => {
-    const saved = localStorage.getItem('paymentHistory');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [paymentHistory, setPaymentHistory] = useState<Record<string, { amount: number; date: string }[]>>({});
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState('');
+  const [ciroRapor, setCiroRapor] = useState({ gunluk: 0, haftalik: 0, aylik: 0, toplam: 0 });
+  const [topProducts, setTopProducts] = useState<{ name: string; adet: number }[]>([]);
 
-  // orderHistory değişince localStorage'a kaydet
+  // Siparişleri API'den çek
   useEffect(() => {
-    localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-  }, [orderHistory]);
+    fetch('/api/orders')
+      .then(res => res.json())
+      .then(data => {
+        // API'den gelen orders dizisini OrderHistoryState formatına dönüştür
+        const grouped: Record<string, any[]> = {};
+        (data.orders || []).forEach((o: any) => {
+          if (!grouped[o.tableNumber]) grouped[o.tableNumber] = [];
+          grouped[o.tableNumber].push(o);
+        });
+        setOrderHistory(grouped);
+      });
+  }, []);
 
-  // Ödeme geçmişi için state
+  // Borç/ödeme verilerini API'den çek
   useEffect(() => {
-    localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
-  }, [paymentHistory]);
+    fetch('/api/debts')
+      .then(res => res.json())
+      .then(data => {
+        // API'den gelen debts dizisini uygun şekilde grupla
+        const grouped: Record<string, { amount: number; date: string }[]> = {};
+        (data.debts || []).forEach((d: any) => {
+          if (!grouped[d.customerName]) grouped[d.customerName] = [];
+          grouped[d.customerName].push({ amount: d.amount, date: d.date });
+        });
+        setPaymentHistory(grouped);
+      });
+  }, []);
+
+  // Raporlar ve en çok satanlar verilerini API'den çek
+  useEffect(() => {
+    fetch('/api/reports')
+      .then(res => res.json())
+      .then(data => setCiroRapor(data));
+    fetch('/api/top-products')
+      .then(res => res.json())
+      .then(data => setTopProducts(data.topProducts || []));
+  }, []);
 
   if (!user || !role || !displayName) {
     return <Login onLogin={(u, r, d) => { setUser(u); setRole(r); setDisplayName(d); }} />;
@@ -177,12 +203,24 @@ const Home: React.FC = () => {
     setSelectedTable(null);
   };
 
-  // Sipariş geçmişine kayıt ekle
-  const addOrderHistory = (tableNumber: number, historyItem: OrderHistoryItem) => {
-    setOrderHistory((prev) => ({
-      ...prev,
-      [tableNumber]: [...(prev[tableNumber] || []), historyItem],
-    }));
+  // Sipariş geçmişine kayıt ekle (API'ye POST)
+  const addOrderHistory = async (tableNumber: number, historyItem: OrderHistoryItem) => {
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...historyItem, tableNumber })
+    });
+    // Ekleme sonrası tekrar siparişleri çek
+    fetch('/api/orders')
+      .then(res => res.json())
+      .then(data => {
+        const grouped: Record<string, any[]> = {};
+        (data.orders || []).forEach((o: any) => {
+          if (!grouped[o.tableNumber]) grouped[o.tableNumber] = [];
+          grouped[o.tableNumber].push(o);
+        });
+        setOrderHistory(grouped);
+      });
   };
 
   // Profil alanı
@@ -192,70 +230,9 @@ const Home: React.FC = () => {
     setDisplayName(null);
   };
 
-  // Raporlama hesaplamaları
-  const allHistory = Object.values(orderHistory).flat();
-  const now = dayjs();
-
-  // Günlük ciro
-  const gunlukCiro = allHistory
-    .filter(h => {
-      const tarih = dayjs(h.date, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD');
-      const bugun = now.format('YYYY-MM-DD');
-      return tarih === bugun;
-    })
-    .reduce((sum, h) => sum + (h.total || 0), 0);
-
-  // Haftalık ciro (Pazartesi-Pazartesi)
-  const startOfWeek = now.startOf('week').add(1, 'day'); // Pazartesi
-  const endOfWeek = startOfWeek.add(6, 'day');
-  const haftalikCiro = allHistory
-    .filter(h => {
-      const tarih = dayjs(h.date, 'YYYY-MM-DD HH:mm:ss');
-      return (
-        tarih.isAfter(startOfWeek, 'day') || tarih.isSame(startOfWeek, 'day')
-      ) && (
-        tarih.isBefore(endOfWeek, 'day') || tarih.isSame(endOfWeek, 'day')
-      );
-    })
-    .reduce((sum, h) => sum + (h.total || 0), 0);
-
-  // Aylık ciro (Ay başı-sonu, ay ismine göre)
-  const startOfMonth = now.startOf('month');
-  const endOfMonth = now.endOf('month');
-  const aylikCiro = allHistory
-    .filter(h => {
-      const tarih = dayjs(h.date, 'YYYY-MM-DD HH:mm:ss');
-      return (
-        tarih.isAfter(startOfMonth, 'day') || tarih.isSame(startOfMonth, 'day')
-      ) && (
-        tarih.isBefore(endOfMonth, 'day') || tarih.isSame(endOfMonth, 'day')
-      );
-    })
-    .reduce((sum, h) => sum + (h.total || 0), 0);
-  const ayIsmi = now.locale('tr').format('MMMM');
-
-  // En çok satılan ürünler kategorilere göre
-  const kategoriMap: Record<string, { name: string; adet: number }[]> = {
-    drink: [],
-    breakfast: [],
-    soup: [],
-    food: [],
-  };
-  allHistory.forEach(h => {
-    h.items.forEach((item: any) => {
-      kategoriMap[item.menuItem.category] = kategoriMap[item.menuItem.category] || [];
-      const mevcut = kategoriMap[item.menuItem.category].find(u => u.name === item.menuItem.name);
-      if (mevcut) {
-        mevcut.adet += item.quantity;
-      } else {
-        kategoriMap[item.menuItem.category].push({ name: item.menuItem.name, adet: item.quantity });
-      }
-    });
-  });
-  // Her kategoride en çok satılanları sırala
-  Object.keys(kategoriMap).forEach(cat => {
-    kategoriMap[cat] = kategoriMap[cat].sort((a, b) => b.adet - a.adet).slice(0, 5);
-  });
+  // Raporlar ve en çok satanlar state'lerini ilgili alanlarda kullan:
+  // ciroRapor.gunluk, ciroRapor.haftalik, ciroRapor.aylik, ciroRapor.toplam
+  // topProducts dizisi
 
   // Siparişi başka masaya aktarma fonksiyonu
   const handleTableChange = (oldTable: number, newTable: number, items: OrderItem[]) => {
@@ -310,48 +287,42 @@ const Home: React.FC = () => {
   });
   const borclularList = Object.entries(borcGruplari);
 
-  // Borç ödeme işlemi
+  // Borç ödeme işlemi başlatıcı (isim seçildiğinde modal açar)
   const handleDebtPay = (ad: string) => {
     setPayDebtName(ad);
     setPayAmount('');
   };
-  const handleDebtPayConfirm = () => {
+
+  // Borç ödeme işlemi (API'ye POST)
+  const handleDebtPayConfirm = async () => {
     if (!payDebtName) return;
     const odenecek = Number(payAmount);
     if (!odenecek || odenecek <= 0) return;
-    setOrderHistory(prev => {
-      const updated = { ...prev };
-      let kalan = odenecek;
-      const kayitlar = borcGruplari[payDebtName].kayitlar.slice().sort((a, b) => new Date(a.tarih).getTime() - new Date(b.tarih).getTime());
-      kayitlar.forEach(k => {
-        const h = updated[k.masa]?.[k.index];
-        if (h && h.isDebt && kalan > 0) {
-          if (h.total <= kalan) {
-            kalan -= h.total;
-            h.isDebt = false;
-          } else {
-            h.total -= kalan;
-            kalan = 0;
-          }
-        }
+    // API'ye POST
+    await fetch('/api/debts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerName: payDebtName, amount: odenecek, date: dayjs().format('YYYY-MM-DD HH:mm:ss') })
+    });
+    // Ekleme sonrası tekrar borçları çek
+    fetch('/api/debts')
+      .then(res => res.json())
+      .then(data => {
+        const grouped: Record<string, { amount: number; date: string }[]> = {};
+        (data.debts || []).forEach((d: any) => {
+          if (!grouped[d.customerName]) grouped[d.customerName] = [];
+          grouped[d.customerName].push({ amount: d.amount, date: d.date });
+        });
+        setPaymentHistory(grouped);
       });
-      return updated;
-    });
-    // Ödeme geçmişine ekle
-    setPaymentHistory(prev => {
-      const updated = { ...prev };
-      if (!updated[payDebtName]) updated[payDebtName] = [];
-      updated[payDebtName].push({ amount: odenecek, date: dayjs().format('YYYY-MM-DD HH:mm:ss') });
-      return updated;
-    });
     setPayDebtName(null);
     setPayAmount('');
   };
 
   // Kasa/Ödeme raporları için hesaplamalar
-  const gunlukHistory = allHistory.filter(h => {
+  const gunlukHistory = Object.values(orderHistory).flat().filter(h => {
     const tarih = dayjs(h.date, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD');
-    const bugun = now.format('YYYY-MM-DD');
+    const bugun = dayjs().format('YYYY-MM-DD');
     return tarih === bugun;
   });
   const nakitToplam = gunlukHistory.filter(h => h.paymentMethod === 'cash').reduce((sum, h) => sum + (h.total || 0), 0);
@@ -448,9 +419,10 @@ const Home: React.FC = () => {
           <Box sx={{ display: 'flex', gap: 4, mb: 4, justifyContent: 'center' }}>
             <Paper sx={{ p: 3, minWidth: 260, textAlign: 'center' }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>Ciro Raporu</Typography>
-              <Typography variant="body1" sx={{ mt: 2 }}>Günlük: <b>{gunlukCiro} TL</b></Typography>
-              <Typography variant="body1">Haftalık (Pzt-Pzt): <b>{haftalikCiro} TL</b></Typography>
-              <Typography variant="body1">Aylık ({ayIsmi}): <b>{aylikCiro} TL</b></Typography>
+              <Typography variant="body1" sx={{ mt: 2 }}>Günlük: <b>{ciroRapor.gunluk} TL</b></Typography>
+              <Typography variant="body1">Haftalık (Pzt-Pzt): <b>{ciroRapor.haftalik} TL</b></Typography>
+              <Typography variant="body1">Aylık: <b>{ciroRapor.aylik} TL</b></Typography>
+              <Typography variant="body1">Toplam: <b>{ciroRapor.toplam} TL</b></Typography>
             </Paper>
             <Paper sx={{ p: 3, minWidth: 260, textAlign: 'center' }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>Kasa/Ödeme Raporları</Typography>
@@ -460,17 +432,11 @@ const Home: React.FC = () => {
             </Paper>
             <Paper sx={{ p: 3, minWidth: 260, textAlign: 'center' }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>En Çok Satılanlar</Typography>
-              {Object.entries(kategoriMap).map(([cat, urunler]) => (
-                urunler.length > 0 && (
-                  <div key={cat} style={{ marginBottom: 12 }}>
-                    <b>{sabitKategoriler.find(k => k.value === cat)?.label || cat}</b>
-                    <ol style={{ margin: 0, paddingLeft: 20, textAlign: 'left' }}>
-                      {urunler.map((u, i) => (
-                        <li key={u.name}>{u.name} <b>{u.adet} adet</b></li>
-                      ))}
-                    </ol>
-                  </div>
-                )
+              {topProducts.map((p, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <b>{p.name}</b>
+                  <span style={{ marginLeft: 8 }}>{p.adet} adet</span>
+                </div>
               ))}
             </Paper>
           </Box>
