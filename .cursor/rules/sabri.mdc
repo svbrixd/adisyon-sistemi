@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Always respond in Turkish. Never give long explanations, do the code and summarise what you did last time. Be concise. Minimize any other prose. Finally, each time you finish, give me suggestions for the next step.
+
