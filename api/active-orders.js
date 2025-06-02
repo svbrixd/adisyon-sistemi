@@ -1,1 +1,42 @@
-const { MongoClient } = require("mongodb");\n\nconst uri = process.env.MONGODB_URI;\n\nmodule.exports = async function handler(req, res) {\n  if (!uri) {\n    res.status(500).json({ error: "MONGODB_URI tanımlı değil" });\n    return;\n  }\n  const client = new MongoClient(uri);\n  await client.connect();\n  const db = client.db();\n  const collection = db.collection("activeOrders");\n\n  if (req.method === "GET") {\n    const activeOrders = await collection.find({}).toArray();\n    res.status(200).json({ activeOrders });\n  } else if (req.method === "POST") {\n    const { tableNumber, items } = req.body || {};\n    if (!tableNumber) {\n      res.status(400).json({ error: "tableNumber gerekli" });\n      return;\n    }\n    await collection.updateOne(\n      { tableNumber },\n      { $set: { tableNumber, items } },\n      { upsert: true }\n    );\n    res.status(200).json({ success: true });\n  } else if (req.method === "DELETE") {\n    const { tableNumber } = req.body || {};\n    if (!tableNumber) {\n      res.status(400).json({ error: "tableNumber gerekli" });\n      return;\n    }\n    await collection.deleteOne({ tableNumber });\n    res.status(200).json({ success: true });\n  } else {\n    res.status(405).json({ error: "Method not allowed" });\n  }\n  await client.close();\n};\n 
+const { MongoClient } = require("mongodb");
+
+const uri = process.env.MONGODB_URI;
+
+module.exports = async function handler(req, res) {
+  if (!uri) {
+    res.status(500).json({ error: "MONGODB_URI tanımlı değil" });
+    return;
+  }
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db();
+  const collection = db.collection("activeOrders");
+
+  if (req.method === "GET") {
+    const activeOrders = await collection.find({}).toArray();
+    res.status(200).json({ activeOrders });
+  } else if (req.method === "POST") {
+    const { tableNumber, items } = req.body || {};
+    if (!tableNumber) {
+      res.status(400).json({ error: "tableNumber gerekli" });
+      return;
+    }
+    await collection.updateOne(
+      { tableNumber },
+      { $set: { tableNumber, items } },
+      { upsert: true }
+    );
+    res.status(200).json({ success: true });
+  } else if (req.method === "DELETE") {
+    const { tableNumber } = req.body || {};
+    if (!tableNumber) {
+      res.status(400).json({ error: "tableNumber gerekli" });
+      return;
+    }
+    await collection.deleteOne({ tableNumber });
+    res.status(200).json({ success: true });
+  } else {
+    res.status(405).json({ error: "Method not allowed" });
+  }
+  await client.close();
+};
