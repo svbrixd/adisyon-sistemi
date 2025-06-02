@@ -140,6 +140,7 @@ const Home: React.FC = () => {
   const [resetError, setResetError] = useState('');
   const [ciroRapor, setCiroRapor] = useState({ gunluk: 0, haftalik: 0, aylik: 0, toplam: 0 });
   const [topProducts, setTopProducts] = useState<{ name: string; adet: number }[]>([]);
+  const [activeOrders, setActiveOrders] = useState<{ tableNumber: number, items: any[] }[]>([]);
 
   // Siparişleri API'den çek
   useEffect(() => {
@@ -181,18 +182,36 @@ const Home: React.FC = () => {
       .then(data => setTopProducts(data.topProducts || []));
   }, []);
 
+  // Aktif siparişleri API'den çek
+  useEffect(() => {
+    fetch('/api/active-orders')
+      .then(res => res.json())
+      .then(data => setActiveOrders(data.activeOrders || []));
+  }, []);
+
   if (!user || !role || !displayName) {
     return <Login onLogin={(u, r, d) => { setUser(u); setRole(r); setDisplayName(d); }} />;
   }
 
-  // Sipariş ekleme/çıkarma fonksiyonları
-  const updateOrder = (tableNumber: number, newOrder: OrderItem[]) => {
+  // Sipariş ekleme/çıkarma fonksiyonları (hem state hem API)
+  const updateOrder = async (tableNumber: number, newOrder: OrderItem[]) => {
     setOrders((prev) => ({ ...prev, [tableNumber]: newOrder }));
+    await fetch('/api/active-orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber, items: newOrder })
+    });
+    // Aktif siparişleri tekrar çek
+    fetch('/api/active-orders')
+      .then(res => res.json())
+      .then(data => setActiveOrders(data.activeOrders || []));
   };
 
+  // Masa toplamı aktif siparişlerden hesaplanır
   const getTableTotal = (tableNumber: number) => {
-    const order = orders[tableNumber] || [];
-    return order.reduce((total, item) => total + item.menuItem.price * item.quantity, 0);
+    const aktif = activeOrders.find(o => o.tableNumber === tableNumber);
+    if (!aktif) return 0;
+    return (aktif.items || []).reduce((total, item) => total + item.menuItem.price * item.quantity, 0);
   };
 
   const handleTableClick = (tableNumber: number) => {
@@ -203,14 +222,20 @@ const Home: React.FC = () => {
     setSelectedTable(null);
   };
 
-  // Sipariş geçmişine kayıt ekle (API'ye POST)
+  // Sipariş geçmişine kayıt ekle (adisyon kapatınca aktif siparişi sil)
   const addOrderHistory = async (tableNumber: number, historyItem: OrderHistoryItem) => {
     await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...historyItem, tableNumber })
     });
-    // Ekleme sonrası tekrar siparişleri çek
+    // Aktif siparişi sil
+    await fetch('/api/active-orders', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber })
+    });
+    // Siparişleri tekrar çek
     fetch('/api/orders')
       .then(res => res.json())
       .then(data => {
@@ -221,6 +246,10 @@ const Home: React.FC = () => {
         });
         setOrderHistory(grouped);
       });
+    // Aktif siparişleri tekrar çek
+    fetch('/api/active-orders')
+      .then(res => res.json())
+      .then(data => setActiveOrders(data.activeOrders || []));
   };
 
   // Profil alanı
