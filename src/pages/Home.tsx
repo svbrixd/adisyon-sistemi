@@ -399,8 +399,14 @@ const Home: React.FC = () => {
     setResetConfirmOpen(true);
   };
 
-  const handleResetConfirm = () => {
+  const handleResetConfirm = async () => {
     if (resetPassword === 'olamaz123') {
+      // MongoDB'de de verileri sıfırla
+      await fetch('/api/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: resetPassword })
+      });
       setOrderHistory({});
       setPaymentHistory({});
       localStorage.removeItem('orderHistory');
