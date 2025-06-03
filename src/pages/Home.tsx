@@ -129,9 +129,9 @@ const sabitKategoriler = [
 ];
 
 const Home: React.FC = () => {
-  const [user, setUser] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [user, setUser] = useState<string | null>(() => localStorage.getItem('user'));
+  const [role, setRole] = useState<string | null>(() => localStorage.getItem('role'));
+  const [displayName, setDisplayName] = useState<string | null>(() => localStorage.getItem('displayName'));
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [orders, setOrders] = useState<OrdersState>({});
   const [orderHistory, setOrderHistory] = useState<OrderHistoryState>({});
@@ -216,7 +216,14 @@ const Home: React.FC = () => {
   }, [selectedTable]);
 
   if (!user || !role || !displayName) {
-    return <Login onLogin={(u, r, d) => { setUser(u); setRole(r); setDisplayName(d); }} />;
+    return <Login onLogin={(u, r, d) => {
+      setUser(u);
+      setRole(r);
+      setDisplayName(d);
+      localStorage.setItem('user', u);
+      localStorage.setItem('role', r);
+      localStorage.setItem('displayName', d);
+    }} />;
   }
 
   // Sipariş ekleme/çıkarma fonksiyonları (hem state hem API)
@@ -283,6 +290,9 @@ const Home: React.FC = () => {
     setUser(null);
     setRole(null);
     setDisplayName(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    localStorage.removeItem('displayName');
   };
 
   // Raporlar ve en çok satanlar state'lerini ilgili alanlarda kullan:
