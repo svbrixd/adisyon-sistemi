@@ -60,25 +60,39 @@ const menuItems: MenuItemType[] = [
   { id: 24, name: 'Tost', price: 130, category: 'food' },
 ];
 
-const USERS = [
-  { username: 'garson', password: 'garson', role: 'garson', displayName: 'Garson' },
-  { username: 'admin', password: 'olamaz123', role: 'admin', displayName: 'Yönetici' },
-];
-
 const Login: React.FC<{ onLogin: (user: string, role: string, displayName: string) => void }> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('garson');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const found = USERS.find(u => u.username === username && u.password === password && u.role === role);
-    if (found) {
-      onLogin(found.username, found.role, found.displayName);
-    } else {
-      setError('Kullanıcı adı, şifre veya rol hatalı!');
+    setLoading(true);
+    setError('');
+    console.log("fetch başlıyor", { username, password, role });
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role })
+      });
+      console.log("fetch bitti", res);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("login başarılı", data);
+        onLogin(data.username, data.role, data.displayName);
+      } else {
+        const err = await res.json();
+        console.log("login hatası", err);
+        setError(err.error || 'Giriş başarısız!');
+      }
+    } catch (e) {
+      setError('Sunucu hatası!');
+      console.log("catch", e);
     }
+    setLoading(false);
   };
 
   return (
@@ -101,7 +115,7 @@ const Login: React.FC<{ onLogin: (user: string, role: string, displayName: strin
           </select>
         </div>
         {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
-        <button type="submit" style={{ width: '100%', padding: 10, background: '#8B4513', color: '#fff', border: 'none', borderRadius: 4, fontWeight: 600 }}>Giriş Yap</button>
+        <button type="submit" style={{ width: '100%', padding: 10, background: '#8B4513', color: '#fff', border: 'none', borderRadius: 4, fontWeight: 600 }} disabled={loading}>{loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}</button>
       </form>
     </div>
   );
