@@ -1,1 +1,27 @@
-const { MongoClient } = require("mongodb");\n\nconst uri = process.env.MONGODB_URI;\n\nmodule.exports = async function handler(req, res) {\n  if (!uri) {\n    res.status(500).json({ error: "MONGODB_URI tanımlı değil" });\n    return;\n  }\n  const client = new MongoClient(uri);\n  await client.connect();\n  const db = client.db();\n  const collection = db.collection("users");\n\n  if (req.method === "POST") {\n    const { username, password, role } = req.body || {};\n    const user = await collection.findOne({ username, password, role });\n    if (user) {\n      res.status(200).json({ username: user.username, role: user.role, displayName: user.displayName });\n    } else {\n      res.status(401).json({ error: "Kullanıcı adı, şifre veya rol hatalı!" });\n    }\n  } else {\n    res.status(405).json({ error: "Method not allowed" });\n  }\n  await client.close();\n};\n 
+const { MongoClient } = require("mongodb");
+
+const uri = process.env.MONGODB_URI;
+
+module.exports = async function handler(req, res) {
+  if (!uri) {
+    res.status(500).json({ error: "MONGODB_URI tanımlı değil" });
+    return;
+  }
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db();
+  const collection = db.collection("users");
+
+  if (req.method === "POST") {
+    const { username, password, role } = req.body || {};
+    const user = await collection.findOne({ username, password, role });
+    if (user) {
+      res.status(200).json({ username: user.username, role: user.role, displayName: user.displayName });
+    } else {
+      res.status(401).json({ error: "Kullanıcı adı, şifre veya rol hatalı!" });
+    }
+  } else {
+    res.status(405).json({ error: "Method not allowed" });
+  }
+  await client.close();
+};
