@@ -203,6 +203,18 @@ const Home: React.FC = () => {
       .then(data => setActiveOrders(data.activeOrders || []));
   }, []);
 
+  useEffect(() => {
+    if (selectedTable !== null) {
+      // Aktif siparişleri API'den çek ve orders state'ini güncelle
+      fetch('/api/active-orders')
+        .then(res => res.json())
+        .then(data => {
+          const aktif = (data.activeOrders || []).find((o: any) => o.tableNumber === selectedTable);
+          setOrders(prev => ({ ...prev, [selectedTable]: aktif ? aktif.items : [] }));
+        });
+    }
+  }, [selectedTable]);
+
   if (!user || !role || !displayName) {
     return <Login onLogin={(u, r, d) => { setUser(u); setRole(r); setDisplayName(d); }} />;
   }
