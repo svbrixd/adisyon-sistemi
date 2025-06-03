@@ -26,6 +26,22 @@ module.exports = async function handler(req, res) {
     const id = last.length > 0 ? last[0].id + 1 : 1;
     await collection.insertOne({ id, name, price, category });
     res.status(201).json({ success: true });
+  } else if (req.method === "DELETE") {
+    const { id } = req.body || {};
+    if (!id) {
+      res.status(400).json({ error: "Eksik id" });
+      return;
+    }
+    await collection.deleteOne({ id });
+    res.status(200).json({ success: true });
+  } else if (req.method === "PUT") {
+    const { id, name, price, category } = req.body || {};
+    if (!id || !name || !price || !category) {
+      res.status(400).json({ error: "Eksik bilgi" });
+      return;
+    }
+    await collection.updateOne({ id }, { $set: { name, price, category } });
+    res.status(200).json({ success: true });
   } else {
     res.status(405).json({ error: "Method not allowed" });
   }

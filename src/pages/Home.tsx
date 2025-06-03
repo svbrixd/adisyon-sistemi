@@ -286,18 +286,42 @@ const Home: React.FC = () => {
   };
 
   // Ürün ekle
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.price) return;
-    setMenuList(prev => ([...prev, { id: Date.now(), name: newProduct.name, price: Number(newProduct.price), category: newProduct.category as MenuItemType["category"] }]));
+    await fetch('/api/menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newProduct.name, price: Number(newProduct.price), category: newProduct.category })
+    });
+    // Menüleri tekrar çek
+    fetch('/api/menu')
+      .then(res => res.json())
+      .then(data => setMenuList(data.menu || []));
     setNewProduct({ name: '', price: '', category: sabitKategoriler[0].value });
   };
   // Ürün sil
-  const handleDeleteProduct = (id: number) => {
-    setMenuList(prev => prev.filter(p => p.id !== id));
+  const handleDeleteProduct = async (id: number) => {
+    await fetch('/api/menu', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    fetch('/api/menu')
+      .then(res => res.json())
+      .then(data => setMenuList(data.menu || []));
   };
-  // Fiyat güncelle
-  const handleEditPrice = (id: number) => {
-    setMenuList(prev => prev.map(p => p.id === id ? { ...p, price: Number(editPrice) } : p));
+  // Fiyat ve ürün güncelle
+  const handleEditPrice = async (id: number) => {
+    const product = menuList.find(p => p.id === id);
+    if (!product) return;
+    await fetch('/api/menu', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name: product.name, price: Number(editPrice), category: product.category })
+    });
+    fetch('/api/menu')
+      .then(res => res.json())
+      .then(data => setMenuList(data.menu || []));
     setEditId(null);
     setEditPrice('');
   };
