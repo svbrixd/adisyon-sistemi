@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Container, Typography, Dialog, IconButton, Paper, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, InputLabel, FormControl, Tabs, Tab } from '@mui/material';
 import TableGrid from '../components/TableGrid';
 import OrderPanel from '../components/OrderPanel';
@@ -124,6 +124,7 @@ const Home: React.FC = () => {
   const [ciroRapor, setCiroRapor] = useState({ gunluk: 0, haftalik: 0, aylik: 0, toplam: 0 });
   const [topProducts, setTopProducts] = useState<{ name: string; adet: number }[]>([]);
   const [activeOrders, setActiveOrders] = useState<{ tableNumber: number, items: any[] }[]>([]);
+  const updateOrderTimeout = useRef<any>(null);
 
   // Siparişleri API'den çek
   useEffect(() => {
@@ -202,18 +203,21 @@ const Home: React.FC = () => {
     }} />;
   }
 
-  // Sipariş ekleme/çıkarma fonksiyonları (hem state hem API)
-  const updateOrder = async (tableNumber: number, newOrder: OrderItem[]) => {
+  // Sipariş ekleme/çıkarma fonksiyonları (debounce)
+  const updateOrder = (tableNumber: number, newOrder: OrderItem[]) => {
     setOrders((prev) => ({ ...prev, [tableNumber]: newOrder }));
-    await fetch('/api/active-orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tableNumber, items: newOrder })
-    });
-    // Aktif siparişleri tekrar çek
-    fetch('/api/active-orders')
-      .then(res => res.json())
-      .then(data => setActiveOrders(data.activeOrders || []));
+    if (updateOrderTimeout.current) clearTimeout(updateOrderTimeout.current);
+    updateOrderTimeout.current = setTimeout(() => {
+      fetch('/api/active-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNumber, items: newOrder })
+      }).then(() => {
+        fetch('/api/active-orders')
+          .then(res => res.json())
+          .then(data => setActiveOrders(data.activeOrders || []));
+      });
+    }, 500);
   };
 
   // Masa toplamı aktif siparişlerden hesaplanır
