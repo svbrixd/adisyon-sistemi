@@ -217,7 +217,7 @@ const Home: React.FC = () => {
           .then(res => res.json())
           .then(data => setActiveOrders(data.activeOrders || []));
       });
-    }, 10000);
+    }, 500);
   };
 
   // Masa toplamı aktif siparişlerden hesaplanır

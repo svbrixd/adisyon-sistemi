@@ -38,8 +38,12 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
   const [openHistory, setOpenHistory] = useState(false);
   const [changeTableOpen, setChangeTableOpen] = useState(false);
   const [newTable, setNewTable] = useState<number>(tableNumber);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   const addItem = (menuItem: MenuItemType) => {
+    if (buttonDisabled) return;
+    setButtonDisabled(true);
+    setTimeout(() => setButtonDisabled(false), 300);
     const existingItem = orderItems.find((item) => item.menuItem.id === menuItem.id);
     let newOrder: OrderItem[];
     if (existingItem) {
@@ -55,6 +59,9 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
   };
 
   const removeItem = (menuItemId: number) => {
+    if (buttonDisabled) return;
+    setButtonDisabled(true);
+    setTimeout(() => setButtonDisabled(false), 300);
     const newOrder = orderItems
       .map((item) =>
         item.menuItem.id === menuItemId
@@ -216,6 +223,7 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
                     size="large"
                     onClick={() => removeItem(item.menuItem.id)}
                     sx={{ color: 'primary.main' }}
+                    disabled={buttonDisabled}
                   >
                     <RemoveIcon sx={{ fontSize: 28 }} />
                   </IconButton>
@@ -224,6 +232,7 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
                     size="large"
                     onClick={() => addItem(item.menuItem)}
                     sx={{ color: 'primary.main' }}
+                    disabled={buttonDisabled}
                   >
                     <AddIcon sx={{ fontSize: 28 }} />
                   </IconButton>
