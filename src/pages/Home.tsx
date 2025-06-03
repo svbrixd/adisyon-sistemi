@@ -29,37 +29,6 @@ type OrderHistoryState = {
   [tableNumber: number]: OrderHistoryItem[];
 };
 
-const menuItems: MenuItemType[] = [
-  // İçecekler
-  { id: 1, name: 'Kola', price: 50, category: 'drink' },
-  { id: 2, name: 'Fanta', price: 50, category: 'drink' },
-  { id: 3, name: 'Ice Tea', price: 50, category: 'drink' },
-  { id: 4, name: 'Meyve Suyu', price: 50, category: 'drink' },
-  { id: 5, name: 'Meyveli Soda', price: 25, category: 'drink' },
-  { id: 6, name: 'Sade Soda', price: 20, category: 'drink' },
-  { id: 7, name: 'Ayran', price: 20, category: 'drink' },
-  { id: 8, name: 'Su', price: 10, category: 'drink' },
-  { id: 9, name: 'Çay', price: 15, category: 'drink' },
-  { id: 10, name: 'Türk kahvesi', price: 50, category: 'drink' },
-  { id: 11, name: 'Nescafe', price: 40, category: 'drink' },
-  // Kahvaltı
-  { id: 12, name: 'Kahvaltı Tabağı', price: 300, category: 'breakfast' },
-  { id: 13, name: 'Serpme Kahvaltı', price: 600, category: 'breakfast' },
-  // Çorba
-  { id: 14, name: 'Kelle Paça', price: 200, category: 'soup' },
-  { id: 15, name: 'İşkembe', price: 200, category: 'soup' },
-  { id: 16, name: 'Mercimek', price: 100, category: 'soup' },
-  { id: 17, name: 'Tavuk Çorbası', price: 150, category: 'soup' },
-  // Yemek
-  { id: 18, name: 'Köfte Ekmek', price: 180, category: 'food' },
-  { id: 19, name: 'Köfte Porsiyon', price: 300, category: 'food' },
-  { id: 20, name: 'Tavuk Pilav', price: 150, category: 'food' },
-  { id: 21, name: 'Tavuk Şiş', price: 300, category: 'food' },
-  { id: 22, name: 'Mantı', price: 300, category: 'food' },
-  { id: 23, name: 'Kokoreç', price: 220, category: 'food' },
-  { id: 24, name: 'Tost', price: 130, category: 'food' },
-];
-
 const Login: React.FC<{ onLogin: (user: string, role: string, displayName: string) => void }> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -137,7 +106,7 @@ const Home: React.FC = () => {
   const [orderHistory, setOrderHistory] = useState<OrderHistoryState>({});
   const [reportOpen, setReportOpen] = useState(false);
   const [menuManageOpen, setMenuManageOpen] = useState(false);
-  const [menuList, setMenuList] = useState<MenuItemType[]>(menuItems);
+  const [menuList, setMenuList] = useState<MenuItemType[]>([]);
   const [newProduct, setNewProduct] = useState({ name: '', price: '', category: sabitKategoriler[0].value });
   const [editId, setEditId] = useState<number|null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
@@ -214,6 +183,13 @@ const Home: React.FC = () => {
         });
     }
   }, [selectedTable]);
+
+  // Menü ürünlerini API'den çek
+  useEffect(() => {
+    fetch('/api/menu')
+      .then(res => res.json())
+      .then(data => setMenuList(data.menu || []));
+  }, []);
 
   if (!user || !role || !displayName) {
     return <Login onLogin={(u, r, d) => {
