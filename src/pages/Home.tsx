@@ -435,15 +435,15 @@ const Home: React.FC = () => {
         <button onClick={() => setDebtOpen(true)} style={{ background: '#b71c1c', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 12px', fontWeight: 600, cursor: 'pointer' }}>Borç</button>
         <button onClick={handleLogout} style={{ background: '#dc004e', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 12px', fontWeight: 600, cursor: 'pointer' }}>Çıkış</button>
       </div>
-      <Box sx={{ flexGrow: 1, p: 3, minHeight: '100vh', backgroundColor: 'background.default' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4, gap: 2, width: '100%' }}>
-          <RestaurantIcon sx={{ fontSize: 48, color: 'primary.main' }} />
-          <Typography variant="h3" component="h1" sx={{ fontWeight: 700, color: 'primary.main', textAlign: 'center' }}>
+      <Box sx={{ flexGrow: 1, p: { xs: 1, md: 3 }, minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { xs: 2, md: 4 }, gap: 2, width: '100%' }}>
+          <RestaurantIcon sx={{ fontSize: { xs: 32, md: 48 }, color: 'primary.main' }} />
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'primary.main', textAlign: 'center', fontSize: { xs: 22, md: 36 } }}>
             NO 57 Ayancık Cafe
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start', justifyContent: 'center', width: '100%' }}>
-          <Box sx={{ flex: 1, minWidth: 400 }}>
+        <Box sx={{ display: 'flex', gap: { xs: 1, md: 4 }, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start', justifyContent: 'center', width: '100%' }}>
+          <Box sx={{ flex: 1, minWidth: { xs: 0, md: 400 } }}>
             <TableGrid onTableClick={handleTableClick} getTableTotal={getTableTotal} />
           </Box>
         </Box>
@@ -456,6 +456,9 @@ const Home: React.FC = () => {
             sx: {
               borderRadius: 4,
               backgroundColor: 'background.paper',
+              p: { xs: 1, md: 3 },
+              minWidth: { xs: '95vw', md: 1800 },
+              maxWidth: { xs: '98vw', md: 2400 },
             },
           }}
         >

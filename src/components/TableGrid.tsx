@@ -27,14 +27,21 @@ interface TableGridProps {
 }
 
 const TableGrid: React.FC<TableGridProps> = ({ onTableClick, getTableTotal }) => (
-  <Box sx={{ width: '100%', maxWidth: 700, mx: 'auto', mt: 4 }}>
+  <Box
+    sx={{
+      width: '100%',
+      maxWidth: { xs: 400, sm: 700 },
+      mx: 'auto',
+      mt: { xs: 2, md: 4 },
+    }}
+  >
     <Box
       sx={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: 3,
+        gap: { xs: 1, sm: 3 },
         justifyContent: 'center',
-        mb: 4,
+        mb: { xs: 2, md: 4 },
       }}
     >
       {tables.map((table) => {
@@ -43,7 +50,7 @@ const TableGrid: React.FC<TableGridProps> = ({ onTableClick, getTableTotal }) =>
         let icon = null;
         const isFull = getTableTotal(table.id) > 0;
         if (isFull) {
-          bg = '#388e3c'; // dolu tüm tiplerde
+          bg = '#388e3c';
         } else if (table.type === 'bahce') {
           bg = '#1976d2';
         } else if (table.type === 'kapi') {
@@ -61,9 +68,9 @@ const TableGrid: React.FC<TableGridProps> = ({ onTableClick, getTableTotal }) =>
           <Box
             key={table.id}
             sx={{
-              width: { xs: '45%', sm: '22%' },
-              minWidth: 120,
-              mb: 2,
+              width: { xs: '48%', sm: '22%' },
+              minWidth: { xs: 100, sm: 120 },
+              mb: { xs: 1, md: 2 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -76,10 +83,10 @@ const TableGrid: React.FC<TableGridProps> = ({ onTableClick, getTableTotal }) =>
                 background: bg,
                 color,
                 fontWeight: 700,
-                fontSize: 18,
+                fontSize: { xs: 14, md: 18 },
                 boxShadow: 2,
                 borderRadius: 2,
-                py: 2,
+                py: { xs: 1, md: 2 },
                 '&:hover': { background: bg },
                 display: 'flex',
                 flexDirection: 'column',

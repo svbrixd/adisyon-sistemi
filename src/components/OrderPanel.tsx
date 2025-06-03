@@ -123,32 +123,32 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
           <Paper 
             elevation={0} 
             sx={{ 
-              p: 4, 
+              p: { xs: 2, md: 4 }, 
               backgroundColor: 'background.default',
               borderRadius: 3,
               mb: 3
             }}
           >
-            <Typography variant="h4" sx={{ mb: 3, color: 'primary.main', fontWeight: 700 }}>
+            <Typography variant="h5" sx={{ mb: { xs: 1, md: 3 }, color: 'primary.main', fontWeight: 700, fontSize: { xs: 18, md: 28 } }}>
               Menü
             </Typography>
             {(['drink', 'breakfast', 'soup', 'food'] as MenuItemType['category'][]).map((cat) => (
-              <Box key={cat} sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" sx={{ mb: 1, color: 'secondary.main', fontWeight: 700, fontSize: 20 }}>
+              <Box key={cat} sx={{ mb: { xs: 1, md: 2 } }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, color: 'secondary.main', fontWeight: 700, fontSize: { xs: 15, md: 20 } }}>
                   {categoryLabels[cat]}
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, md: 1 }, justifyContent: 'flex-start' }}>
                   {menuItems.filter((item) => item.category === cat).map((item) => (
                     <Paper
                       key={item.id}
                       elevation={2}
                       sx={{
-                        width: 140,
-                        minWidth: 120,
-                        maxWidth: 160,
+                        width: { xs: 110, md: 140 },
+                        minWidth: { xs: 90, md: 120 },
+                        maxWidth: { xs: 120, md: 160 },
                         m: 0,
                         mb: 1,
-                        p: 1.5,
+                        p: { xs: 1, md: 1.5 },
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
@@ -162,14 +162,14 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ tableNumber, orderItems, setOrd
                       onClick={() => addItem(item)}
                     >
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: 15 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: { xs: 13, md: 15 } }}>
                           {item.name}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: 11, md: 13 } }}>
                           {item.price} TL
                         </Typography>
                       </Box>
-                      <AddIcon sx={{ fontSize: 20 }} />
+                      <AddIcon sx={{ fontSize: { xs: 16, md: 20 } }} />
                     </Paper>
                   ))}
                 </Box>
